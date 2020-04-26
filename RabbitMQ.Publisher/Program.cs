@@ -6,22 +6,34 @@ namespace RabbitMQ.Publisher
 {
     class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
+            if (args == null) {
+                Console.WriteLine("Args null");
+            }
+            else {
+                args = new string[1];
+                args[0] = "Mehmet";
+            }
+
 
             var factory = new ConnectionFactory();
-            //factory.Uri = new Uri("amqp://ugtyfnnw:UNR12-I4-zKp_dU4mjcmTmuK3PHd3Hz-@rattlesnake.rmq.cloudamqp.com/ugtyfnnw");
-            factory.HostName = "localhost";
+            factory.Uri = new Uri("amqp://ugtyfnnw:UNR12-I4-zKp_dU4mjcmTmuK3PHd3Hz-@rattlesnake.rmq.cloudamqp.com/ugtyfnnw");
             using (var connection = factory.CreateConnection())
             {
                 using (var channel = connection.CreateModel())
                 {
-                    channel.QueueDeclare("hello", false, false, false, null);
-                    string message = "Hello word";
-                    var bodyMessage = Encoding.UTF8.GetBytes(message);
-                    channel.BasicPublish("", "hello", null, bodyMessage);
+                    channel.QueueDeclare("task_queue",true, false, false, null);
+                    string message = GetMessage(args);
+                    for (int i = 1; i < 11; i++)
+                    {
+                        var bodyMessage = Encoding.UTF8.GetBytes($"{message}-{i}");
 
-                    Console.WriteLine("Mesajınız Gönderilmiştir.");
+                        var properties = channel.CreateBasicProperties();
+                        properties.Persistent = true;
+                        channel.BasicPublish("", "task_queue",properties, bodyMessage);
+                        Console.WriteLine("Mesajınız Gönderilmiştir."+ $"{message}-{i}");
+                    }
                 }
 
                 Console.WriteLine("Çıkış yapmak için tıklayınız..");
@@ -29,6 +41,11 @@ namespace RabbitMQ.Publisher
             }
 
 
+        }
+
+        private static string GetMessage(string[] args)
+        {
+            return args[0].ToString();
         }
     }
 }
